@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة إدارة الطاقم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#141320;
+    --bg-soft:#1b192a;
+    --panel:#211f33;
+    --panel-2:#282640;
+    --line:#34314f;
+    --ink:#eeecf9;
+    --muted:#9691b3;
+    --accent:#7c6cf2;
+    --accent-2:#4e46b8;
+    --gold:#e8b34a;
+    --danger:#ef5a6f;
+    --ok:#3fd28b;
+    --discord:#5865f2;
+    --radius:14px;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(124,108,242,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(232,179,74,.10), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Cairo',sans-serif;
+    min-height:100vh;
+  }
+  .display{font-family:'Sora','Cairo',sans-serif;}
+  ::selection{background:var(--accent); color:#fff;}
+
+  #loginScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .login-card{
+    width:100%; max-width:420px; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:36px 30px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden;
+  }
+  .login-card::before{ content:""; position:absolute; inset:0 0 auto 0; height:4px; background:linear-gradient(90deg,var(--discord),var(--accent)); }
+  .login-card h1{ font-size:22px; margin:0 0 4px; letter-spacing:.3px;}
+  .login-card p.sub{ color:var(--muted); margin:0 0 26px; font-size:13.5px;}
+  .login-err{color:var(--danger); font-size:13px; margin-top:10px; min-height:16px; text-align:center;}
+  .login-info{color:var(--muted); font-size:12px; margin-top:18px; text-align:center; line-height:1.6;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 18px; border-radius:10px; border:none; cursor:pointer;
+    font-family:'Cairo'; font-weight:700; font-size:14px; transition:transform .1s, filter .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.6; cursor:default;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; width:100%;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-discord{background:var(--discord); color:#fff; width:100%; font-size:15px; padding:13px 18px;}
+  .btn-discord:hover{filter:brightness(1.12);}
+  .btn-discord svg{width:20px; height:20px; flex-shrink:0;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--accent);}
+  .btn-danger{background:rgba(239,90,111,.12); color:var(--danger); border:1px solid rgba(239,90,111,.35);}
+  .btn-small{padding:7px 12px; font-size:12.5px; border-radius:8px;}
+
+  #app{display:none; min-height:100vh; grid-template-columns:250px 1fr;}
+  #app.show{display:grid;}
+  aside{ background:var(--bg-soft); border-left:1px solid var(--line); padding:22px 16px; display:flex; flex-direction:column; gap:22px; }
+  .brand{display:flex; align-items:center; gap:10px; padding:0 4px;}
+  .brand-badge{ width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--accent),var(--gold)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; color:#191831; }
+  .brand h2{font-size:15px; margin:0;}
+  .brand span{font-size:11px; color:var(--muted);}
+
+  .whoami{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .whoami .name{font-weight:700; font-size:14px;}
+  .whoami .role-tag{ display:inline-block; margin-top:6px; font-size:11px; padding:3px 9px; border-radius:20px; background:rgba(124,108,242,.18); color:#c7bfff; font-weight:700; }
+
+  nav.tabs{display:flex; flex-direction:column; gap:4px;}
+  .tab-btn{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:var(--muted); cursor:pointer; font-size:13.5px; font-weight:600; border:1px solid transparent; background:transparent; text-align:right; width:100%; font-family:'Cairo'; }
+  .tab-btn:hover{background:var(--panel);}
+  .tab-btn.active{background:var(--panel-2); color:var(--ink); border-color:var(--line);}
+  .tab-btn .dot{width:7px; height:7px; border-radius:50%; background:var(--muted);}
+  .tab-btn.active .dot{background:var(--accent);}
+
+  .logout-wrap{margin-top:auto;}
+
+  main{padding:28px 34px; overflow-y:auto;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:14px; flex-wrap:wrap;}
+  .topbar h1{font-size:21px; margin:0;}
+  .topbar p{color:var(--muted); font-size:13px; margin:4px 0 0;}
+  .search{ padding:9px 14px; border-radius:10px; border:1px solid var(--line); background:var(--panel); color:var(--ink); font-family:'Cairo'; font-size:13.5px; min-width:220px; outline:none; }
+  .search:focus{border-color:var(--accent);}
+
+  .role-block{margin-bottom:30px;}
+  .role-head{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .role-head .bar{width:5px; height:20px; border-radius:3px; background:var(--gold);}
+  .role-head h3{font-size:16px; margin:0;}
+  .role-head .count{color:var(--muted); font-size:12.5px;}
+
+  .members-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;}
+  .member-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .member-top{display:flex; align-items:center; gap:10px;}
+  .avatar{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--accent-2),var(--accent)); font-weight:800; font-size:14px; color:#fff; flex-shrink:0; }
+  .member-name{font-weight:700; font-size:14.5px;}
+  .member-user{color:var(--muted); font-size:12px;}
+  .task-progress{font-size:11px; color:var(--muted); margin-inline-start:auto; white-space:nowrap;}
+  .discord-badge{display:inline-flex; align-items:center; gap:4px; font-size:10.5px; padding:2px 7px; border-radius:20px; background:rgba(88,101,242,.15); color:#99a5ff; font-weight:700; margin-top:2px;}
+
+  .task-list{display:flex; flex-direction:column; gap:7px; max-height:190px; overflow-y:auto; padding-inline-start:2px;}
+  .task-row{display:flex; align-items:center; gap:9px; font-size:13px; background:var(--bg-soft); border:1px solid var(--line); border-radius:8px; padding:7px 9px;}
+  .task-row.done{opacity:.55;}
+  .task-row.done .task-title{text-decoration:line-through;}
+  .task-row input[type=checkbox]{ width:17px; height:17px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+  .task-title{flex:1; word-break:break-word;}
+  .task-del{background:none; border:none; color:var(--muted); cursor:pointer; font-size:15px; line-height:1; padding:2px 4px;}
+  .task-del:hover{color:var(--danger);}
+  .empty-tasks{font-size:12px; color:var(--muted); padding:6px 2px;}
+
+  .add-task-row{display:flex; gap:6px;}
+  .add-task-row input{ flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--ink); font-family:'Cairo'; font-size:12.5px; outline:none; }
+  .add-task-row input:focus{border-color:var(--accent);}
+  .add-task-row button{ background:var(--accent); border:none; color:#fff; border-radius:8px; padding:0 14px; cursor:pointer; font-weight:700; font-size:16px; }
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:18px;}
+  .sup-list{display:flex; flex-direction:column; gap:10px; margin-top:18px;}
+  .sup-row{ display:flex; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; flex-wrap:wrap; }
+  .sup-row .info{flex:1; min-width:180px;}
+  .sup-row .info b{font-size:14px;}
+  .sup-row .info .u{color:var(--muted); font-size:12px; display:block; margin-top:2px;}
+  .sup-actions{display:flex; gap:8px;}
+  .scope-chips{display:flex; gap:6px; flex-wrap:wrap; max-width:340px;}
+  .chip{background:rgba(124,108,242,.15); color:#cfc7ff; font-size:11px; padding:4px 10px; border-radius:20px; font-weight:700;}
+
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px;}
+  .field input, .field select{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg-soft); color:var(--ink); font-family:'Cairo'; font-size:14px; outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus, .field select:focus{border-color:var(--accent);}
+  .checks{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .check-pill{ display:flex; align-items:center; gap:6px; background:var(--bg-soft); border:1px solid var(--line); padding:6px 10px; border-radius:20px; font-size:12px; cursor:pointer; user-select:none; }
+  .check-pill input{accent-color:var(--accent); cursor:pointer;}
+  .section-title{font-size:14px; color:var(--gold); margin:18px 0 8px; font-weight:700;}
+
+  /* Modal */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(20,19,32,.75); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:24px; width:100%; max-width:550px; box-shadow:var(--shadow); max-height:90vh; overflow-y:auto; }
+
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--panel-2); border:1px solid var(--accent); color:var(--ink); padding:10px 20px; border-radius:10px; font-size:13px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s, bottom .25s; z-index:150; }
+  .toast.show{opacity:1; bottom:34px;}
+  .toast.error{border-color:var(--danger);}
+
+  @media(max-width:820px){
+    #app.show{grid-template-columns:1fr;}
+    aside{flex-direction:row; flex-wrap:wrap; padding:14px;}
+    nav.tabs{flex-direction:row; flex-wrap:wrap;}
+    main{padding:20px;}
+    .logout-wrap{margin-top:0;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card" id="loginCard">
+    <h1 class="display">لوحة إدارة الطاقم</h1>
+    <p class="sub">سجل الدخول عبر Discord للمتابعة</p>
+    <button class="btn btn-discord" id="discordLoginBtn" onclick="startDiscordLogin()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" fill="white"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>
+      تسجيل الدخول عبر Discord
+    </button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-info" id="loginInfo">
+      يتم تسجيل الدخول حصريًا عبر حساب Discord<br>
+      يجب ربط حساب Discord الخاص بك أولاً بواسطة المدير
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="brand">
+      <div class="brand-badge display">RVN</div>
+      <div>
+        <h2 class="display">لوحة الطاقم</h2>
+        <span>إدارة الرتب والمهام</span>
+      </div>
+    </div>
+
+    <div class="whoami">
+      <div class="name" id="whoName">-</div>
+      <span class="role-tag" id="whoRole">-</span>
+    </div>
+
+    <nav class="tabs" id="tabsNav"></nav>
+
+    <div class="logout-wrap">
+      <button class="btn btn-ghost" style="width:100%" onclick="doLogout()">تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main id="mainArea"></main>
+</div>
+
+<!-- Edit Supervisor Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-card">
+    <h2 class="display" style="margin-top:0; font-size:18px;">تعديل صلاحيات المشرف</h2>
+    <input type="hidden" id="edit_sup_id">
+
+    <div class="field"><label>اسم المشرف</label><input id="edit_sup_display"></div>
+    <div class="field"><label>Discord ID (اتركه فارغًا إذا لا تريد تغييره)</label><input id="edit_sup_discord" placeholder="مثال: 123456789012345678"></div>
+
+    <div class="section-title">الرتب التي يديرها</div>
+    <div class="checks" id="edit_sup_roles"></div>
+
+    <div class="section-title">أشخاص محددين (اختياري)</div>
+    <div class="checks" id="edit_sup_members"></div>
+
+    <div style="margin-top:22px; display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn btn-ghost btn-small" onclick="closeEditModal()">إلغاء</button>
+      <button class="btn btn-primary btn-small" style="width:auto;" id="saveEditBtn" onclick="saveSupervisorEdit()">حفظ التغييرات</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Member Modal -->
+<div class="modal-overlay" id="editMemberModal">
+  <div class="modal-card">
+    <h2 class="display" style="margin-top:0; font-size:18px;">تعديل بيانات العضو</h2>
+    <input type="hidden" id="edit_mem_id">
+
+    <div class="field"><label>اسم العضو</label><input id="edit_mem_name"></div>
+    <div class="field"><label>اليوزر (اسم المستخدم)</label><input id="edit_mem_username"></div>
+    <div class="field"><label>Discord ID (لإرسال الإشعارات)</label><input id="edit_mem_discord" placeholder="مثال: 123456789012345678"></div>
+    <div class="field">
+      <label>الرتبة</label>
+      <select id="edit_mem_role"></select>
+    </div>
+
+    <div style="margin-top:22px; display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn btn-ghost btn-small" onclick="closeEditMemberModal()">إلغاء</button>
+      <button class="btn btn-primary btn-small" style="width:auto;" id="saveMemberBtn" onclick="saveMemberEdit()">حفظ التعديلات</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- state ---------------- */
+var TOKEN = sessionStorage.getItem('panel_token') || null;
+var STATE = { user: null, roles: [], members: [], tasks: [], supervisors: [] };
+var ACTIVE_TAB = 'members';
+var memberSearch = '';
+
+/* ---------------- server call wrapper ---------------- */
+function gsCall(fnName) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function(resolve, reject) {
+    var runner = google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(function(err) { reject(err); });
+    runner[fnName].apply(runner, args);
+  });
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(function() { t.className = 'toast'; }, 2500);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function(c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; });
+}
+
+/* ---------------- Discord OAuth login ---------------- */
+function startDiscordLogin() {
+  var btn = document.getElementById('discordLoginBtn');
+  btn.disabled = true;
+  btn.textContent = 'جاري التوجيه إلى Discord...';
+  gsCall('getDiscordAuthUrl').then(function(res) {
+    window.location.href = res.url;
+  }).catch(function(err) {
+    document.getElementById('loginErr').textContent = err.message || 'خطأ في الاتصال بالخادم';
+    btn.disabled = false;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" fill="white" style="width:20px;height:20px;"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/></svg> تسجيل الدخول عبر Discord';
+  });
+}
+
+/* ---------------- auth ---------------- */
+function doLogout() {
+  if (TOKEN) gsCall('logout', TOKEN).catch(function() {});
+  TOKEN = null;
+  sessionStorage.removeItem('panel_token');
+  STATE = { user: null, roles: [], members: [], tasks: [], supervisors: [] };
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginErr').textContent = '';
+}
+
+function bootstrapAndShow() {
+  gsCall('getBootstrap', TOKEN).then(function(data) {
+    STATE.user = data.user;
+    STATE.roles = data.roles;
+    STATE.members = data.members;
+    STATE.tasks = data.tasks;
+    STATE.supervisors = data.supervisors || [];
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('show');
+    renderShell();
+  }).catch(function() {
+    sessionStorage.removeItem('panel_token');
+    TOKEN = null;
+  });
+}
+
+/* ---------------- shell / nav ---------------- */
+function renderShell() {
+  document.getElementById('whoName').textContent = STATE.user.displayName;
+  document.getElementById('whoRole').textContent = STATE.user.type === 'admin' ? 'مدير عام' : 'مشرف';
+
+  var tabs = [{ id: 'members', label: 'عرض المهام' }];
+  if (STATE.user.type === 'admin') {
+    tabs.push({ id: 'manage_members', label: 'الرتب والأعضاء' });
+    tabs.push({ id: 'supervisors', label: 'حسابات المشرفين' });
+  }
+  tabs.push({ id: 'account', label: 'حسابي' });
+
+  document.getElementById('tabsNav').innerHTML = tabs.map(function(t) {
+    return '<button class="tab-btn ' + (ACTIVE_TAB === t.id ? 'active' : '') + '" onclick="setTab(\'' + t.id + '\')"><span class="dot"></span> ' + t.label + '</button>';
+  }).join('');
+
+  renderMain();
+}
+function setTab(id) { ACTIVE_TAB = id; renderShell(); }
+
+/* ---------------- scope ---------------- */
+function visibleMembers() {
+  if (STATE.user.type === 'admin') return STATE.members;
+  return STATE.members.filter(function(m) { return STATE.user.scopeRoles.indexOf(m.roleId) !== -1 || STATE.user.scopeMembers.indexOf(m.id) !== -1; });
+}
+
+/* ---------------- router ---------------- */
+function renderMain() {
+  var main = document.getElementById('mainArea');
+  if (ACTIVE_TAB === 'members') return renderMembers(main);
+  if (ACTIVE_TAB === 'manage_members') return renderManageMembers(main);
+  if (ACTIVE_TAB === 'supervisors') return renderSupervisors(main);
+  if (ACTIVE_TAB === 'account') return renderAccount(main);
+}
+
+/* ---------------- members + tasks ---------------- */
+function renderMembers(main) {
+  var members = visibleMembers();
+  var q = memberSearch.trim().toLowerCase();
+  var filtered = q ? members.filter(function(m) { return m.name.toLowerCase().indexOf(q) !== -1 || m.username.toLowerCase().indexOf(q) !== -1; }) : members;
+
+  var grouped = {};
+  STATE.roles.forEach(function(r) { grouped[r.id] = []; });
+  filtered.forEach(function(m) { if (!grouped[m.roleId]) grouped[m.roleId] = []; grouped[m.roleId].push(m); });
+
+  var html = '<div class="topbar"><div><h1 class="display">الأعضاء والمهام</h1><p>' +
+    (STATE.user.type === 'admin' ? 'عرض كل الأعضاء والمهام' : 'الرتب والأعضاء المسندة لك فقط') +
+    '</p></div><input class="search" placeholder="بحث بالاسم أو اليوزر..." value="' + escapeHtml(memberSearch) +
+    '" oninput="memberSearch=this.value; renderMain();"></div>';
+
+  var any = false;
+  STATE.roles.forEach(function(role) {
+    var list = grouped[role.id] || [];
+    if (list.length === 0) return;
+    any = true;
+    html += '<div class="role-block"><div class="role-head"><div class="bar"></div><h3 class="display">' + escapeHtml(role.name) + '</h3><span class="count">(' + list.length + ')</span></div><div class="members-grid">' + list.map(function(m) { return memberCard(m); }).join('') + '</div></div>';
+  });
+
+  if (!any) html += '<div class="card">لا يوجد أعضاء لعرضهم.</div>';
+  main.innerHTML = html;
+}
+
+function memberCard(m) {
+  var tasks = STATE.tasks.filter(function(t) { return t.memberId === m.id; });
+  var doneCount = tasks.filter(function(t) { return t.done; }).length;
+  var initials = m.name.slice(0, 2).toUpperCase();
+  var isAdmin = STATE.user.type === 'admin';
+  var hasDiscord = m.discordId && m.discordId.length > 0;
+
+  return '<div class="member-card"><div class="member-top"><div class="avatar">' + escapeHtml(initials) + '</div><div><div class="member-name">' + escapeHtml(m.name) + '</div><div class="member-user">@' + escapeHtml(m.username) + '</div>' + (hasDiscord ? '<div class="discord-badge">Discord متصل</div>' : '') + '</div><div class="task-progress">' + doneCount + '/' + tasks.length + ' منجزة</div></div><div class="task-list">' +
+    (tasks.length === 0 ? '<div class="empty-tasks">لا توجد مهام بعد</div>' :
+      tasks.map(function(t) { return '<div class="task-row' + (t.done ? ' done' : '') + '"><input type="checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleTask(\'' + t.id + '\')"><span class="task-title">' + escapeHtml(t.title) + '</span>' + (isAdmin ? '<button class="task-del" title="حذف" onclick="deleteTask(\'' + t.id + '\')">\u2715</button>' : '') + '</div>'; }).join('')
+    ) +
+    '</div><div class="add-task-row"><input type="text" placeholder="إضافة تسك جديد..." id="newtask_' + m.id + '" onkeydown="if(event.key===\'Enter\') addTask(\'' + m.id + '\')"><button onclick="addTask(\'' + m.id + '\')">+</button></div></div>';
+}
+
+async function addTask(memberId) {
+  var input = document.getElementById('newtask_' + memberId);
+  var title = input.value.trim();
+  if (!title) return;
+  input.disabled = true;
+  try {
+    var task = await gsCall('addTask', TOKEN, memberId, title);
+    STATE.tasks.push(task);
+    renderMain();
+    showToast('تمت إضافة التسك - سيتم إرسال إشعار Discord');
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  } finally {
+    input.disabled = false;
+  }
+}
+async function toggleTask(taskId) {
+  try {
+    var updated = await gsCall('toggleTask', TOKEN, taskId);
+    var t = STATE.tasks.find(function(x) { return x.id === taskId; });
+    if (t) t.done = updated.done;
+    renderMain();
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+    renderMain();
+  }
+}
+async function deleteTask(taskId) {
+  try {
+    await gsCall('deleteTask', TOKEN, taskId);
+    STATE.tasks = STATE.tasks.filter(function(x) { return x.id !== taskId; });
+    renderMain();
+    showToast('تم حذف التسك');
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  }
+}
+
+/* ---------------- MANAGE MEMBERS & ROLES (ADMIN ONLY) ---------------- */
+function renderManageMembers(main) {
+  if (STATE.user.type !== 'admin') return;
+
+  var html = '<div class="topbar"><div><h1 class="display">إدارة الأعضاء والرتب</h1><p>إضافة أعضاء ورتب جديدة وتعديل أسماء الأعضاء الحالية</p></div></div>' +
+    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">' +
+      '<div class="card"><div class="section-title">إضافة رتبة جديدة</div><div class="field"><label>اسم الرتبة</label><input id="new_role_name" placeholder="مثال: MODERATOR"></div><button class="btn btn-primary" style="width:auto;" onclick="addRole()">إضافة الرتبة</button></div>' +
+      '<div class="card"><div class="section-title">إضافة عضو جديد</div><div class="field"><label>الاسم</label><input id="new_mem_name" placeholder="مثال: أحمد"></div><div class="field"><label>اسم المستخدم (اليوزر)</label><input id="new_mem_user" placeholder="مثال: ahmed123"></div><div class="field"><label>Discord ID (لإرسال الإشعارات)</label><input id="new_mem_discord" placeholder="مثال: 123456789012345678"></div><div class="field"><label>الرتبة</label><select id="new_mem_role">' +
+      STATE.roles.map(function(r) { return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>'; }).join('') +
+      '</select></div><button class="btn btn-primary" style="width:auto;" onclick="addMember()">إضافة العضو</button></div>' +
+    '</div>' +
+    '<div class="card" style="margin-top:20px;"><div class="section-title">قائمة الأعضاء الحاليين</div><div class="sup-list" style="margin-top:10px;">' +
+    STATE.members.map(function(m) {
+      var roleObj = STATE.roles.find(function(r) { return r.id === m.roleId; }) || {};
+      return '<div class="sup-row"><div class="info"><b>' + escapeHtml(m.name) + '</b><span class="u">@' + escapeHtml(m.username) + ' — <span style="color:var(--gold);">' + escapeHtml(roleObj.name || 'بدون رتبة') + '</span>' + (m.discordId ? ' — <span style="color:#99a5ff;">Discord: مرتبط</span>' : ' — <span style="color:var(--muted);">Discord: غير مرتبط</span>') + '</span></div><div class="sup-actions"><button class="btn btn-ghost btn-small" onclick="openEditMemberModal(\'' + m.id + '\')">تعديل</button><button class="btn btn-danger btn-small" onclick="deleteMember(\'' + m.id + '\')">حذف</button></div></div>';
+    }).join('') +
+    '</div></div>';
+  main.innerHTML = html;
+}
+
+async function addRole() {
+  var name = document.getElementById('new_role_name').value.trim();
+  if (!name) return showToast('اكتب اسم الرتبة', true);
+  try {
+    var role = await gsCall('addRole', TOKEN, name);
+    STATE.roles.push(role);
+    showToast('تمت إضافة الرتبة بنجاح');
+    renderMain();
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  }
+}
+
+async function addMember() {
+  var name = document.getElementById('new_mem_name').value.trim();
+  var username = document.getElementById('new_mem_user').value.trim();
+  var discordId = document.getElementById('new_mem_discord').value.trim();
+  var roleId = document.getElementById('new_mem_role').value;
+
+  if (!name || !username || !roleId) return showToast('يرجى ملء كافة البيانات', true);
+
+  try {
+    var member = await gsCall('addMember', TOKEN, name, username, roleId, discordId);
+    STATE.members.push(member);
+    showToast('تمت إضافة العضو بنجاح');
+    renderMain();
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  }
+}
+
+function openEditMemberModal(id) {
+  var m = STATE.members.find(function(x) { return x.id === id; });
+  if (!m) return;
+  document.getElementById('edit_mem_id').value = m.id;
+  document.getElementById('edit_mem_name').value = m.name;
+  document.getElementById('edit_mem_username').value = m.username;
+  document.getElementById('edit_mem_discord').value = m.discordId || '';
+
+  var sel = document.getElementById('edit_mem_role');
+  sel.innerHTML = STATE.roles.map(function(r) { return '<option value="' + r.id + '" ' + (r.id === m.roleId ? 'selected' : '') + '>' + escapeHtml(r.name) + '</option>'; }).join('');
+
+  document.getElementById('editMemberModal').classList.add('show');
+}
+
+function closeEditMemberModal() {
+  document.getElementById('editMemberModal').classList.remove('show');
+}
+
+async function saveMemberEdit() {
+  var id = document.getElementById('edit_mem_id').value;
+  var name = document.getElementById('edit_mem_name').value.trim();
+  var username = document.getElementById('edit_mem_username').value.trim();
+  var discordId = document.getElementById('edit_mem_discord').value.trim();
+  var roleId = document.getElementById('edit_mem_role').value;
+
+  if (!name || !username) return showToast('البيانات غير مكتملة', true);
+
+  var btn = document.getElementById('saveMemberBtn');
+  btn.disabled = true;
+  try {
+    var updated = await gsCall('updateMember', TOKEN, { id: id, name: name, username: username, roleId: roleId, discordId: discordId });
+    var idx = STATE.members.findIndex(function(x) { return x.id === id; });
+    if (idx !== -1) STATE.members[idx] = updated;
+    showToast('تم تعديل بيانات العضو');
+    closeEditMemberModal();
+    renderMain();
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteMember(id) {
+  if (!confirm('هل أنت تأكد من حذف هذا العضو بالكامل مع مهامه؟')) return;
+  try {
+    await gsCall('deleteMember', TOKEN, id);
+    STATE.members = STATE.members.filter(function(m) { return m.id !== id; });
+    STATE.tasks = STATE.tasks.filter(function(t) { return t.memberId !== id; });
+    renderMain();
+    showToast('تم حذف العضو');
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  }
+}
+
+/* ---------------- supervisors (admin only) ---------------- */
+function renderSupervisors(main) {
+  if (STATE.user.type !== 'admin') return;
+
+  var html = '<div class="topbar"><div><h1 class="display">حسابات المشرفين</h1><p>أنشئ حسابات للمشرفين وحدد الرتب أو الأشخاص اللي هيديروهم</p></div></div>' +
+    '<div class="card"><div class="section-title">إنشاء مشرف جديد</div><div class="form-grid">' +
+      '<div class="field"><label>اسم المشرف (يظهر داخل اللوحة)</label><input id="sup_display" placeholder="مثال: أحمد"></div>' +
+      '<div class="field"><label>Discord ID (يستخدم لتسجيل الدخول)</label><input id="sup_discord" placeholder="مثال: 123456789012345678"></div></div>' +
+      '<div class="section-title">الرتب اللي هيديرها (كل أعضاء الرتبة)</div>' +
+      '<div class="checks" id="sup_roles">' + STATE.roles.map(function(r) { return '<label class="check-pill"><input type="checkbox" value="' + r.id + '"> ' + escapeHtml(r.name) + '</label>'; }).join('') + '</div>' +
+      '<div class="section-title">أو أشخاص محددين بس (اختياري)</div>' +
+      '<div class="checks" id="sup_members">' + STATE.members.map(function(m) { return '<label class="check-pill"><input type="checkbox" value="' + m.id + '"> ' + escapeHtml(m.name) + '</label>'; }).join('') + '</div>' +
+      '<div style="margin-top:18px;"><button class="btn btn-primary" style="width:auto; padding-inline:24px" id="createSupBtn" onclick="createSupervisor()">إنشاء الحساب</button></div>' +
+    '</div>' +
+    '<div class="sup-list">' +
+    (STATE.supervisors.length === 0 ? '<div class="card">لا يوجد مشرفين حتى الآن.</div>' :
+      STATE.supervisors.map(function(s) {
+        var roleNames = s.scopeRoles.map(function(id) { var r = STATE.roles.find(function(x) { return x.id === id; }); return r ? r.name : null; }).filter(Boolean);
+        var memberNames = s.scopeMembers.map(function(id) { var m = STATE.members.find(function(x) { return x.id === id; }); return m ? m.name : null; }).filter(Boolean);
+        return '<div class="sup-row"><div class="info"><b>' + escapeHtml(s.displayName) + '</b><span class="u">Discord ID: ' + escapeHtml(s.discordId || 'غير مضبوط') + '</span></div><div class="scope-chips">' +
+          roleNames.map(function(n) { return '<span class="chip">رتبة: ' + escapeHtml(n) + '</span>'; }).join('') +
+          memberNames.map(function(n) { return '<span class="chip">' + escapeHtml(n) + '</span>'; }).join('') +
+          ((roleNames.length + memberNames.length) === 0 ? '<span class="chip" style="opacity:.6">بدون صلاحيات بعد</span>' : '') +
+          '</div><div class="sup-actions"><button class="btn btn-ghost btn-small" onclick="openEditModal(\'' + s.id + '\')">تعديل</button><button class="btn btn-danger btn-small" onclick="deleteSupervisor(\'' + s.id + '\')">حذف</button></div></div>';
+      }).join('')
+    ) + '</div>';
+  main.innerHTML = html;
+}
+
+async function createSupervisor() {
+  var displayName = document.getElementById('sup_display').value.trim();
+  var discordId = document.getElementById('sup_discord').value.trim();
+  var scopeRoles = Array.from(document.querySelectorAll('#sup_roles input:checked')).map(function(el) { return el.value; });
+  var scopeMembers = Array.from(document.querySelectorAll('#sup_members input:checked')).map(function(el) { return el.value; });
+
+  if (!displayName || !discordId) return showToast('اسم المشرف و Discord ID مطلوبان', true);
+
+  var btn = document.getElementById('createSupBtn');
+  btn.disabled = true;
+  try {
+    var newSup = await gsCall('createSupervisor', TOKEN, { displayName: displayName, discordId: discordId, scopeRoles: scopeRoles, scopeMembers: scopeMembers });
+    STATE.supervisors.push(newSup);
+    showToast('تم إنشاء حساب المشرف');
+    renderMain();
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openEditModal(supId) {
+  var s = STATE.supervisors.find(function(x) { return x.id === supId; });
+  if (!s) return;
+
+  document.getElementById('edit_sup_id').value = s.id;
+  document.getElementById('edit_sup_display').value = s.displayName;
+  document.getElementById('edit_sup_discord').value = s.discordId || '';
+
+  document.getElementById('edit_sup_roles').innerHTML = STATE.roles.map(function(r) {
+    return '<label class="check-pill"><input type="checkbox" value="' + r.id + '" ' + (s.scopeRoles.indexOf(r.id) !== -1 ? 'checked' : '') + '> ' + escapeHtml(r.name) + '</label>';
+  }).join('');
+
+  document.getElementById('edit_sup_members').innerHTML = STATE.members.map(function(m) {
+    return '<label class="check-pill"><input type="checkbox" value="' + m.id + '" ' + (s.scopeMembers.indexOf(m.id) !== -1 ? 'checked' : '') + '> ' + escapeHtml(m.name) + '</label>';
+  }).join('');
+
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveSupervisorEdit() {
+  var id = document.getElementById('edit_sup_id').value;
+  var displayName = document.getElementById('edit_sup_display').value.trim();
+  var discordId = document.getElementById('edit_sup_discord').value.trim();
+  var scopeRoles = Array.from(document.querySelectorAll('#edit_sup_roles input:checked')).map(function(el) { return el.value; });
+  var scopeMembers = Array.from(document.querySelectorAll('#edit_sup_members input:checked')).map(function(el) { return el.value; });
+
+  var btn = document.getElementById('saveEditBtn');
+  btn.disabled = true;
+  try {
+    var updated = await gsCall('updateSupervisor', TOKEN, { id: id, displayName: displayName, discordId: discordId, scopeRoles: scopeRoles, scopeMembers: scopeMembers });
+    var idx = STATE.supervisors.findIndex(function(x) { return x.id === id; });
+    if (idx !== -1) STATE.supervisors[idx] = updated;
+    showToast('تم تعديل حساب المشرف بنجاح');
+    closeEditModal();
+    renderMain();
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteSupervisor(id) {
+  if (!confirm('متأكد من حذف هذا الحساب؟')) return;
+  try {
+    await gsCall('deleteSupervisor', TOKEN, id);
+    STATE.supervisors = STATE.supervisors.filter(function(s) { return s.id !== id; });
+    renderMain();
+    showToast('تم حذف الحساب');
+  } catch (e) {
+    showToast(e.message || 'حصل خطأ', true);
+  }
+}
+
+/* ---------------- account ---------------- */
+function renderAccount(main) {
+  main.innerHTML = '<div class="topbar"><div><h1 class="display">حسابي</h1></div></div>' +
+    '<div class="card" style="max-width:480px;">' +
+      '<div class="section-title">معلومات الحساب</div>' +
+      '<p style="margin:8px 0; font-size:14px;"><strong>الاسم:</strong> ' + escapeHtml(STATE.user.displayName) + '</p>' +
+      '<p style="margin:8px 0; font-size:14px;"><strong>Discord ID:</strong> <code style="background:var(--bg-soft); padding:2px 8px; border-radius:6px; direction:ltr; display:inline-block;">' + escapeHtml(STATE.user.discordId) + '</code></p>' +
+      '<p style="margin:8px 0; font-size:14px;"><strong>الصلاحية:</strong> ' + (STATE.user.type === 'admin' ? 'مدير عام' : 'مشرف') + '</p>' +
+    '</div>';
+}
+
+/* ---------------- init ---------------- */
+(function init() {
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code');
+  var state = params.get('state');
+
+  if (code && state) {
+    var card = document.getElementById('loginCard');
+    card.innerHTML = '<h1 class="display" style="text-align:center;">جاري تسجيل الدخول...</h1><p class="sub" style="text-align:center;">يتم التحقق من حساب Discord</p><div style="text-align:center; margin:20px 0;"><div style="width:40px;height:40px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;"></div></div><style>@keyframes spin{to{transform:rotate(360deg);}}</style>';
+    document.getElementById('loginInfo').style.display = 'none';
+
+    gsCall('discordLogin', code, state).then(function(res) {
+      if (res.ok) {
+        TOKEN = res.token;
+        sessionStorage.setItem('panel_token', TOKEN);
+        window.history.replaceState({}, '', window.location.pathname);
+        bootstrapAndShow();
+      } else {
+        card.innerHTML = '<h1 class="display" style="text-align:center;font-size:18px;">فشل تسجيل الدخول</h1><p class="sub" style="text-align:center;">' + escapeHtml(res.error) + '</p><button class="btn btn-discord" onclick="location.reload()" style="margin-top:16px;">حاول مرة أخرى</button>';
+      }
+    }).catch(function() {
+      card.innerHTML = '<h1 class="display" style="text-align:center;font-size:18px;">خطأ في الاتصال</h1><p class="sub" style="text-align:center;">حدث خطأ أثناء التواصل مع الخادم</p><button class="btn btn-discord" onclick="location.reload()" style="margin-top:16px;">حاول مرة أخرى</button>';
+    });
+  } else if (TOKEN) {
+    bootstrapAndShow();
+  }
+})();
+</script>
+</body>
+</html>
